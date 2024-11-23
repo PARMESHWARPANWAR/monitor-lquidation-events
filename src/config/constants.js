@@ -1,0 +1,13 @@
+require('dotenv').config();
+
+module.exports = {
+    BLOCKCHAIN_CONFIG: {
+      NETWORK: 'mainnet',
+      PROVIDER_URL: `${process.env.ETH_MAIN_NET_URL}${process.env.INFURA_ID}` || '',
+      POOL:'0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2',
+      DATA_PROVIDER_ABI:'0x057835ad21a177dbdd3090bb1cae03eacf78fc6d',
+      AAVE_LENDING_POOL: '0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9',
+      AUSD_CONTRACT: '0xBcca60bB61934080951369a648Fb03DF4F96263C',
+      POOL_DATA_PROVIDER: '0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'
+    }
+  };
