@@ -1,339 +1,27 @@
 const ethers = require('ethers');
-const { BLOCKCHAIN_CONFIG } = require('../config/constants');
 const DatabaseService = require('./database.service');
 const NotificationService = require('./notification.service');
-const { getPriceFeeds } = require('../utils/price-feed.util');
+const { getContract } = require('../../utils/getContract');
 
-const POOL_ABI = [
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "reserve",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "onBehalfOf",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "referralCode",
-                "type": "uint16"
-            }
-        ],
-        "name": "Deposit",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "reserve",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "onBehalfOf",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "borrowRateMode",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "borrowRate",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint16",
-                "name": "referralCode",
-                "type": "uint16"
-            }
-        ],
-        "name": "Borrow",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "reserve",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "repayer",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "useATokens",
-                "type": "bool"
-            }
-        ],
-        "name": "Repay",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "reserve",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "to",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "amount",
-                "type": "uint256"
-            }
-        ],
-        "name": "Withdraw",
-        "type": "event"
-    },
-    {
-        "anonymous": false,
-        "inputs": [
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "collateralAsset",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "debtAsset",
-                "type": "address"
-            },
-            {
-                "indexed": true,
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "debtToCover",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "uint256",
-                "name": "liquidatedCollateralAmount",
-                "type": "uint256"
-            },
-            {
-                "indexed": false,
-                "internalType": "address",
-                "name": "liquidator",
-                "type": "address"
-            },
-            {
-                "indexed": false,
-                "internalType": "bool",
-                "name": "receiveAToken",
-                "type": "bool"
-            }
-        ],
-        "name": "LiquidationCall",
-        "type": "event"
-    },
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            }
-        ],
-        "name": "getUserAccountData",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "totalCollateralBase",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "totalDebtBase",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "availableBorrowsBase",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "currentLiquidationThreshold",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "ltv",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "healthFactor",
-                "type": "uint256"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
-
-const DATA_PROVIDER_ABI = [
-    {
-        "inputs": [
-            {
-                "internalType": "address",
-                "name": "asset",
-                "type": "address"
-            },
-            {
-                "internalType": "address",
-                "name": "user",
-                "type": "address"
-            }
-        ],
-        "name": "getUserReserveData",
-        "outputs": [
-            {
-                "internalType": "uint256",
-                "name": "currentATokenBalance",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "currentStableDebt",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "currentVariableDebt",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "principalStableDebt",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "scaledVariableDebt",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "stableBorrowRate",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint256",
-                "name": "liquidityRate",
-                "type": "uint256"
-            },
-            {
-                "internalType": "uint40",
-                "name": "stableRateLastUpdated",
-                "type": "uint40"
-            },
-            {
-                "internalType": "bool",
-                "name": "usageAsCollateralEnabled",
-                "type": "bool"
-            }
-        ],
-        "stateMutability": "view",
-        "type": "function"
-    }
-]
+const { BLOCKCHAIN_CONFIG } = require('../config/constants');
+const AAVE_LENDING_POOL_CONTRACT = require('../contract/aaveLendingPool.json')
+const AAVE_PROTOCOLA_DATA_PROVIDER_CONTRACT = require('../contract/aaveProtocolaDataProvider.json');
 
 class BlockchainService {
     constructor() {
         this.provider = new ethers.JsonRpcProvider(BLOCKCHAIN_CONFIG.PROVIDER_URL);
-        this.lendingPoolContract = new ethers.Contract(
-            BLOCKCHAIN_CONFIG.POOL,
-            POOL_ABI,
+        this.aaveLendingPool = getContract(
+            BLOCKCHAIN_CONFIG.AAVE_LENDING_POOL,
+            AAVE_LENDING_POOL_CONTRACT.abi,
             this.provider
-        );
-        this.dataProviderContract = new ethers.Contract(
-            BLOCKCHAIN_CONFIG.POOL_DATA_PROVIDER,
-            DATA_PROVIDER_ABI,
+        )
+        
+        this.aaveProtocolaDataProvider = getContract(
+            BLOCKCHAIN_CONFIG.AAVE_PROTOCOLA_DATA_PROVIDER,
+            AAVE_PROTOCOLA_DATA_PROVIDER_CONTRACT.abi,
             this.provider
-        );
+        )
+
         this.databaseService = new DatabaseService();
         this.notificationService = new NotificationService();
     }
@@ -343,7 +31,27 @@ class BlockchainService {
             for (const address of walletAddresses) {
                 const accountData = await this.fetchAccountLiquidationData(address);
 
+                //CALLING LIQUIDATION HERE
                 if (accountData.healthFactor < 1.05) {
+                    try {
+                        const userReserves = await this.aaveProtocolaDataProvider.getUserReservesData(address)
+                       
+                        const collateralAsset = userReserves[0].underlyingAsset;
+                        const debtAsset = userReserves[0].underlyingAsset;
+                        const debtToCover = userData[1];
+                        const receiveAToken = true;
+
+                        await this.aaveLendingPool.liquidationCall(
+                            collateralAsset,
+                            debtAsset,
+                            address,
+                            debtToCover,
+                            receiveAToken
+                        );
+                    } catch (error) {
+                        console.error('user reserves data :', error);
+                    }
+
                     this.notificationService.sendAlert(accountData);
                 }
 
@@ -356,7 +64,7 @@ class BlockchainService {
     }
 
     async fetchAccountLiquidationData(walletAddress) {
-        const userData = await this.lendingPoolContract.getUserAccountData(walletAddress);
+        const userData = await this.aaveLendingPool.getUserAccountData(walletAddress);
         const [
             totalCollateralETH,
             totalDebtETH,
@@ -365,6 +73,7 @@ class BlockchainService {
             healthFactor
         ] = userData;
 
+        //[TODO] GET PRICE FROM PRICE FEED FOLLOWING IS HARDCODE FOR EXAMPLE PURPOSE
         const usdPrices = { ETH: 3400 };
 
         return {
@@ -380,9 +89,7 @@ class BlockchainService {
         const events = ['Deposit', 'Borrow', 'Repay', 'Withdraw', 'LiquidationCall'];
 
         events.forEach(eventName => {
-            console.log('Setting up listener for:', eventName);
-
-            this.lendingPoolContract.on(eventName, (...args) => {
+            this.aaveLendingPool.on(eventName, (...args) => {
                 const event = args[args.length - 1];
                 const values = args.slice(0, -1);
 

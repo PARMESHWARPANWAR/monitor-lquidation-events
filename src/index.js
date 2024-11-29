@@ -2,29 +2,14 @@ const express = require('express');
 const { Pool } = require('pg');
 const BlockchainService = require('./services/blockchain.service');
 const DatabaseService = require('./services/database.service');
+const { MONITORED_ADDRESSES } = require('./config/constants');
 require('dotenv').config();
 
-// Initialize Express app
 const app = express();
 app.use(express.json());
 
 const dbService = new DatabaseService();
 const blockchainService = new BlockchainService();
-
-const monitoredAddresses = [
-  "0x307AEFE7fEE2Bcf9B6bDC159e95A959100BE7b33",
-  "0x8E978fAEa665092aCF47f57BC94785C4ffecB756",
-  "0x3e0b81C7B552DE2B1c212F8EFC163c0FA81Ded82",
-  "0x9Cfe8b9D8a1C545421E14560A490B67AFcF16bd8",
-  '0x5A0b54D5dc17e0AadC383d2db43B0a0D3E029c4c',
-  '0x602d9aBD5671D24026e2ca473903fF2A9A957407',
-  '0x26C7199e9dfE0E0C73Cf890c96893de0129062Cb',
-  '0x26C7199e9dfE0E0C73Cf890c96893de0129062Cb',
-  '0x0084EE6c8893C01E252198b56eC127443dc27464',
-  '0x272492e7f7f4cfa8D2F7F6e4E49E9c6bCE76c9cd',
-  '0x886FAa52466097f7835648c40642B383788e2899',
-  '0x28C6c06298d514Db089934071355E5743bf21d60'
-];
 
 app.get('/accounts', async (req, res) => {
   try {
@@ -64,11 +49,11 @@ app.get('/health', (req, res) => {
 
 async function startBlockchainMonitoring() {
   try {
-    await blockchainService.monitorLiquidationRisk(monitoredAddresses);
+    await blockchainService.monitorLiquidationRisk(MONITORED_ADDRESSES);
     
     setInterval(async () => {
       try {
-        await blockchainService.monitorLiquidationRisk(monitoredAddresses);
+        await blockchainService.monitorLiquidationRisk(MONITORED_ADDRESSES);
       } catch (error) {
         console.error('Error in monitoring interval:', error);
       }

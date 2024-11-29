@@ -1,0 +1,36 @@
+version: '3.8'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+    environment:
+      - DATABASE_URL=postgres://aave_user:aave_password@postgres:5432/aave_indexer
+      - EMAIL_USER=${EMAIL_USER:-}
+      - EMAIL_PASS=${EMAIL_PASS:-}
+      - ALERT_EMAIL=${ALERT_EMAIL:-}
+      - PORT=3000
+      - ETH_MAIN_NET_URL=${ETH_MAIN_NET_URL:-'https://mainnet.infura.io/v3/'}
+      - ETH_SEPOLIA_NET_URL=${ETH_SEPOLIA_NET_URL:-'https://sepolia.infura.io/v3/'}
+      - AVALANCHE_FUJI_NET_URL=${AVALANCHE_FUJI_NET_URL:-'https://avalanche-fuji.infura.io/v3/'}
+      - INFURA_ID=${INFURA_ID:-1cc81f4ddef24f439bd8f8a1f811b0c0}
+      - NETWORK_TYPE=${NETWORK_TYPE:-'MAIN'}
+    volumes:
+      - .:/usr/src/app
+      - /usr/src/app/node_modules
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      - POSTGRES_DB=aave_indexer
+      - POSTGRES_USER=aave_user
+      - POSTGRES_PASSWORD=aave_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+volumes:
+  postgres_data:

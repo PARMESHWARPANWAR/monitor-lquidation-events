@@ -24,14 +24,28 @@ class DatabaseService {
   }
 
   async saveAccountData(data) {
-    const query = `
-      INSERT INTO account_liquidation_data 
+    // Inserts new account data
+    // If account already exists, updates existing record
+    // Updates health factor, collateral value, debt value, and timestamp
+    console.log('liquidation alert data=>',data)
+    const upsertAccountQuery = `
+      INSERT INTO account_liquidation_data (
+        wallet_address, 
+        health_factor, 
+        total_collateral_usd, 
+        total_debt_usd, 
+        last_updated
+      )
       VALUES ($1, $2, $3, $4, $5)
       ON CONFLICT (wallet_address) DO UPDATE
-      SET health_factor = $2, total_collateral_usd = $3, 
-          total_debt_usd = $4, last_updated = $5
+      SET 
+        health_factor = EXCLUDED.health_factor, 
+        total_collateral_usd = EXCLUDED.total_collateral_usd, 
+        total_debt_usd = EXCLUDED.total_debt_usd, 
+        last_updated = EXCLUDED.last_updated
     `;
-    await this.pool.query(query, [
+
+    await this.pool.query(upsertAccountQuery, [
       data.walletAddress,
       data.healthFactor,
       data.totalCollateralUSD,
