@@ -1,18 +1,3 @@
-# monitor-lquidation-events
-
-# Aave Liquidation Risk Monitoring Service
-
-## Prerequisites
-- Node.js version: v20.15.0
-- PostgreSQL database
-- Ethereum RPC Provider Infura
-
-## Setup Instructions
-
-1. Clone the repository
-2. Install dependencies:
-
-################################################################
 # Aave Liquidation Indexer
 
 ## Prerequisites
@@ -24,7 +9,7 @@
 
 1. Clone the repository
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/PARMESHWARPANWAR/monitor-lquidation-events
 cd aave-liquidation-indexer
 ```
 
@@ -33,8 +18,15 @@ cd aave-liquidation-indexer
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_email_password
 ALERT_EMAIL=recipient_email@example.com
-ETH_MAIN_NET_URL=https://mainnet.infura.io/v3/
+ETH_MAIN_NET_URL='https://mainnet.infura.io/v3/'
+AVALANCHE_FUJI_NET_URL='https://avalanche-fuji.infura.io/v3/'
 INFURA_ID=your_infura_project_id
+PORT=3000
+
+
+INFURA_ID=1cc81f4ddef24f439bd8f8a1f811b0c0
+DATABASE_URL='postgres://test:test@localhost:5432/aave_indexer'
+NETWORK_TYPE='MAIN'
 ```
 
 3. Build and start the application
